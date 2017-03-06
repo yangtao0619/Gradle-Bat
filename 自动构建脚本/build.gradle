@@ -1,0 +1,98 @@
+task executeAllBuild << {//执行所有的build文件
+    //首先获得所有的build文件对象
+    def dir = new File('.')
+    def files = new ArrayList<File>()
+    dir.eachFile { file ->
+        if (file.isDirectory()
+                && !file.name.endsWith("_script")
+                && !file.name.endsWith(".idea")
+                && !file.name.endsWith(".gradle")
+                && !file.name.endsWith("gradle")) {
+            //如果这个文件是一个文件夹的话就将它添加到集合里面
+            files.add(new File(file.name))
+            //在每个项目根目录下面创建一个local.properties文件
+            def path = file.getAbsolutePath()
+            def newFile = new File(file,"local.properties")
+            if(newFile.exists()){
+                newFile.delete()
+                newFile.createNewFile()
+            }else{
+                newFile.createNewFile()
+            }
+            println "find directory $path"
+        }
+    }
+    //遍历集合中存放的文件夹
+    files.each { file ->
+        //遍历每一个文件夹中的文件,如果它是一个文件并且它以build.gradle结尾的话应该再此文件所在的文件夹下执行编译脚本
+        file.eachFile { file2 ->
+            if (file2.isFile() && file2.name.endsWith("build.gradle")) {
+                //说明它是一个build.gradle文件,执行即可
+                def parent = file2.getParentFile()
+                println "$parent is building"
+                //'cmd /c gradle build'.execute(null,new File("D:\\temp\\testjenkins\\Code\\IflyViolation"))
+                //在parent文件环境下执行cmd命令,编译每个项目中的gradle文件
+                def proc = "cmd /c gradlew assembleRelease >nul 2>nul".execute(null, parent)//>nul的作用是不输出bat运行产生的信息
+                proc.waitFor()
+                println "$parent's gradle file was builded!"
+            }
+        }
+    }
+    //任务执行完毕之后,遍历所有的文件夹
+    new File(".").eachFileRecurse { file -> //这里的 File 表示的是一个路径
+        if (file.name.endsWith(".apk")) {
+//            println it.getPath();  //eachFile() 列出的每一项是一个 File 实例
+            if (file.getParentFile().getParentFile().getParentFile().getParentFile().getParentFile() != null) {
+                def apkName = file.getParentFile().getParentFile().getParentFile().getParentFile().getParentFile().name
+                if (file.getParentFile().getParentFile().getParentFile().getParentFile().name.indexOf("SpeechClient") != -1) {
+                    apkName = "SpeechClient"
+                }
+                file.renameTo("$apkName" + ".apk")
+            }
+        }
+    }
+    //创建文件夹用于保存本次编译产生的apk文件
+    /*def now = new Date()
+    String fileName = now.format('yyyyMMddHHmmss')*/
+    def currentDir = getNewDir()
+    new File(".").eachFile { file -> //这里的 File 表示的是一个路径
+        if (file.name.endsWith(".apk")) {
+            //拷贝文件到指定文件夹下
+            copy {
+                from file.getAbsolutePath()
+                into currentDir.getAbsolutePath()
+            }
+        }
+    }
+    //删除因重命名导致项目文件夹下面多出的apk文件
+    new File(".").eachFile { file ->
+        if (file.name.endsWith(".apk")) {
+            file.delete()
+        }
+    }
+    println "apks have generated,please open versionDir to check them"
+
+}
+//该方法实现的目的是根据当前目录的文件夹信息自动创建升序文件夹
+File getNewDir() {
+    def dir = new File('E:\\svn\\iflypeccancy\\Trunk\\Project\\07.Release\\发布版本')
+    def fileNameList = new ArrayList<Integer>()
+    dir.eachFile { file ->
+        def fileName = file.getName()
+        try {
+            def parseInt = Integer.parseInt(fileName)
+            fileNameList.add(parseInt)
+            println "$parseInt is a number"
+        } catch (Exception e) {
+            println "$fileName is not a number!"
+        }
+    }
+    //新建文件夹
+    def newNumber = String.valueOf(fileNameList.get(fileNameList.size() - 1) + 1)
+    def newDir = new File(dir, newNumber)
+    def mkdir = newDir.mkdir()
+    if (mkdir) {
+        println "directory $newDir is maked!"
+    }
+    return newDir
+}

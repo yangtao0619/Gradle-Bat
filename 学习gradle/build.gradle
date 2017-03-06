@@ -1,0 +1,4 @@
+task test << {
+    def file = project.file('haha.txt')
+    println file.getAbsolutePath()
+}

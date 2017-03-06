@@ -1,0 +1,62 @@
+task installAllApks << {    //安装本路径下面所有的apk文件
+    //为了防止签名不同带来的影响,先执行卸载操作
+    uninstallAllApks()
+    //1.获取apk文件对象
+    def dir = new File('.')
+    dir.eachFile { file ->
+        if (file.name.endsWith(".apk")) {
+            //2.如果发现了apk文件的话,执行安装
+            def apkName = file.name
+            println "$apkName is installing"
+            def process = "cmd /c adb install -r $apkName >nul 2>nul".execute()
+            process.waitFor()
+            println "$apkName is installed,will install next one"
+        }
+    }
+//    println "all apks have been installed!now copy iflytek to your android device"
+}
+//卸载apk的方法
+def uninstallAllApks() {
+    println "all applications are uninstalling,please wait a minute"
+    def packageNameList = new ArrayList<String>()
+    packageNameList.add("com.iflytek.auto.weather")
+    packageNameList.add("com.tencent.wechat")
+    packageNameList.add("com.iflytek.auto.news")
+    packageNameList.add("com.iflytek.auto.cricum")
+    packageNameList.add("com.iflytek.auto.music")
+    packageNameList.add("com.iflytek.auto.radio")
+    packageNameList.add("com.iflytek.auto.violation")
+    packageNameList.add("com.auto.iflytek.iflyticket")
+    packageNameList.add("com.iflytek.auto.program")
+    packageNameList.add("com.iflytek.car_face")
+    packageNameList.add("com.iflytek.cutefly.speechclient")
+    def proc = "cmd /c adb shell pm list packages".execute()
+    def inputStream = new InputStreamReader(proc.inputStream)
+    BufferedReader bufferedReader = new BufferedReader(inputStream)
+    while (true) {
+        String s = bufferedReader.readLine()
+        if (s == null) {
+            break
+        }
+        if (s.length() > 8) {
+            def packName = s.substring(8, s.length())
+            if (packageNameList.indexOf(packName) != -1) {
+                def uninstallProc = "cmd /c adb uninstall $packName".execute()
+                uninstallProc.waitFor()
+                println "$packName is uninstalled successful!"
+            }
+        }
+    }
+    proc.waitFor()
+}
+//拷贝文件
+def copyFile() {
+    def iflytek = new File("iflytek")
+    def path = iflytek.getAbsolutePath()
+    def proc = "cmd /k start adb push $path /mnt/shell/emulated/0 1>nul".execute()
+    println "file is copying!please wait..."
+    proc.waitFor()
+    if (proc.exitValue() == 0) {
+        println "file copy sucessful!"
+    }
+}

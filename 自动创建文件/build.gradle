@@ -1,0 +1,6 @@
+task createFile << {
+    def file = new File("")
+    println file.getAbsolutePath()
+    def newFile = new File("local.properties")
+    newFile.createNewFile()
+}

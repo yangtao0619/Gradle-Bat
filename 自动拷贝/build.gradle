@@ -1,0 +1,34 @@
+task copyAllFiles << {//执行拷贝任务
+    def dir = new File(".")
+    def fileList = new ArrayList<File>()
+    dir.eachFile { file ->
+        if (file.name.endsWith(".wav.pcm")) {
+            //如果是txt文件的话就将它存进集合里面
+            fileList.add(file)
+        }
+    }
+    def copyTimes = Integer.parseInt(time)
+    println copyTimes
+    for (int i = 0; i < fileList.size(); i++) {
+        copy(copyTimes, fileList.get(i))
+        println "第$i 个文件"
+    }
+}
+
+def copy(int times, File file) {//执行拷贝操作,参数是拷贝的次数和要拷贝的文件
+    for (int i = 0; i < times; i++) {
+        def newFile = new File(file.name.substring(0, file.name.length() - 8) + "_copy_" + (i + 1) + ".wav.pcm")
+        // 基本字节流一次读写一个字节数组
+        FileInputStream inStream = new FileInputStream(file);
+        FileOutputStream outStream = new FileOutputStream(newFile);
+        byte[] by = new byte[1024];
+        int lend = 0;
+        while ((lend = inStream.read(by)) != -1) {
+            outStream.write(by, 0, lend);
+        }
+        inStream.close();
+        outStream.close();
+        newFile.createNewFile()
+        println "the $i times copy"
+    }
+}
